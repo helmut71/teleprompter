@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teleprompter mit Silbenfärbung</title>
+  <script src="https://unpkg.com/hyphenopoly@5/Hyphenopoly_Loader.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+    }
+    .scroll-area {
+      font-size: 1.6em;
+      line-height: 1.6;
+      border: 2px solid #ccc;
+      padding: 1em;
+      margin-top: 1em;
+    }
+    .s1 { color: red; }
+    .s2 { color: blue; }
+    button {
+      font-size: 1em;
+      padding: 0.6em 1em;
+      margin-bottom: 1em;
+    }
+  </style>
+</head>
+<body>
+  <button onclick="toggleSyllables()">🔤 Silbenfärbung an/aus</button>
+  <div class="scroll-area" id="text" lang="de">
+    Die Kinder lernen lesen und schreiben mit dem vertikalen Teleprompter für Volksschulen!
+  </div>
+
+  <script>
+    let originalText = "";
+    let isHyphenated = false;
+
+    Hyphenopoly.config = {
+      require: { "de": "FORCEHYPHENOPOLY" },
+      setup: {
+        selectors: { "#text": {} },
+        handleEvent: {
+          hyphenopolyEnd: () => {
+            originalText = document.getElementById("text").innerText;
+          }
+        }
+      }
+    };
+
+    function toggleSyllables() {
+      const el = document.getElementById("text");
+
+      if (!isHyphenated) {
+        originalText = el.innerText;
+        Hyphenopoly.hyphenators["de"].then(hyphenate => {
+          const temp = document.createElement("div");
+          temp.innerText = originalText;
+          hyphenate(temp).then(() => {
+            const withSoftHyphens = temp.innerHTML;
+
+            let index = 0;
+            const colored = withSoftHyphens.replace(/\u00AD|&shy;|-/g, "<>").split(/(<>)/).map(part => {
+              if (part === "<>") return "";
+              const className = (index++ % 2 === 0) ? "s1" : "s2";
+              return `<span class="\${className}">\${part}</span>`;
+            }).join("");
+            
+            el.innerHTML = colored;
+            isHyphenated = true;
+          });
+        });
+      } else {
+        el.innerText = originalText;
+        isHyphenated = false;
+      }
+    }
+  </script>
+</body>
+</html>
